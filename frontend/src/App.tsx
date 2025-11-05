@@ -14,7 +14,14 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sessionId] = useState(() => 'session_' + Date.now());
+  const [sessionId] = useState(() => {
+    const savedId = localStorage.getItem('sessionId');
+    if (savedId) return savedId;
+
+    const newId = 'session_' + Date.now();
+    localStorage.setItem('sessionId', newId);
+    return newId;
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll to bottom
@@ -25,6 +32,29 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 🗂️ Load lịch sử chat khi mở trang
+  useEffect(() => {
+    console.log(11111);
+    
+    const fetchChatHistory = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/chat/${sessionId}`);
+        console.log(res, 222);
+        
+        if (res.data.success) {
+          setMessages(res.data.chats.map((c: any) => ({
+            role: c.role,
+            content: c.content
+          })));
+        }
+      } catch (err) {
+        console.error('Lỗi load lịch sử chat:', err);
+      }
+    };
+
+    fetchChatHistory();
+  }, [sessionId]);
 
   // Gửi tin nhắn
   const sendMessage = async (e: React.FormEvent) => {
